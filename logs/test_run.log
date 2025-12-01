@@ -1,0 +1,21 @@
+[2025-12-01T07:44:21.617372Z] Environment detected: windows
+[2025-12-01T07:44:21.617937Z] Running test for module: input_backup
+[2025-12-01T07:44:22.437849Z] Running tests for input_backup
+SQL Injection: Vulnerable (returned multiple rows)
+Path traversal in update_records: Not detected (exception) [Errno 2] No such file or directory: '../parent_secret.txt'
+export_data: Vulnerable (uses subprocess)
+transfer:acct_test:10
+transfer_funds: Vulnerable (sends token in payload)
+Vulnerabilities detected for input_backup : ["sql_injection", "command_injection", "token_leak"]
+
+[2025-12-01T07:44:22.438433Z] input_backup: exit_code=1 status=TEST FAILED
+[2025-12-01T07:44:22.438852Z] Running test for module: inputs
+[2025-12-01T07:44:23.026651Z] Running tests for inputs
+SQL Injection: Not detected (exception) Invalid user id
+Path traversal in update_records: Not detected (exception) Invalid config file path
+export_data: Not vulnerable (no subprocess detected)
+transfer_funds: Not vulnerable (signed headers used)
+No vulnerabilities detected for inputs
+
+[2025-12-01T07:44:23.027114Z] inputs: exit_code=0 status=TEST PASSED
+[2025-12-01T07:44:23.027611Z] Final result: TEST PASSED
