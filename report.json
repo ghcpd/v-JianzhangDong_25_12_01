@@ -1,0 +1,100 @@
+{
+  "summary": {
+    "total_vulnerabilities": 9,
+    "critical": 3,
+    "high": 4,
+    "medium": 1,
+    "low": 1
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "inputs.py",
+      "line_numbers": [11,12,13],
+      "vulnerability_type": "Hardcoded secrets",
+      "severity": "High",
+      "description": "Payment and mail keys, and an internal auth secret are hardcoded in the source.",
+      "fix_explanation": "Move secrets to environment variables and ensure they are not logged or hard-coded in source control. Use os.environ.get('VAR').",
+      "secure_code_snippet": "PAYMENT_TOKEN = os.environ.get('PAYMENT_TOKEN')\nMAIL_SERVER_KEY = os.environ.get('MAIL_SERVER_KEY')\nINTERNAL_AUTH = os.environ.get('INTERNAL_AUTH')"
+    },
+    {
+      "id": 2,
+      "file": "inputs.py",
+      "line_numbers": [18,19,20,21],
+      "vulnerability_type": "Weak hashing (MD5)",
+      "severity": "High",
+      "description": "Authentication tokens are generated using MD5, which is cryptographically weak and not suitable for auth token derivation.",
+      "fix_explanation": "Use an HMAC with a secure hashing algorithm (SHA-256) keyed with a server-side secret retrieved from environment variables. Also avoid returning raw hashes that can be used as credentials.",
+      "secure_code_snippet": "import hmac\n token = hmac.new(INTERNAL_AUTH.encode(), username.encode(), hashlib.sha256).hexdigest()"
+    },
+    {
+      "id": 3,
+      "file": "inputs.py",
+      "line_numbers": [24,25,26,27,28,29,30,31],
+      "vulnerability_type": "SQL Injection",
+      "severity": "Critical",
+      "description": "The SQL query is built using string interpolation which allows injection via the `uid` parameter.",
+      "fix_explanation": "Use parameterized SQL queries and the DB API's parameter substitution instead of interpolating strings into queries.",
+      "secure_code_snippet": "q = 'SELECT id,name,balance FROM profiles WHERE id = ?'\n c.execute(q, (uid,))"
+    },
+    {
+      "id": 4,
+      "file": "inputs.py",
+      "line_numbers": [34,35,36,37,38,39,40,41],
+      "vulnerability_type": "SSRF and Secret Exposure",
+      "severity": "High",
+      "description": "The function sends a POST to a user-controlled URL and places a hardcoded token inside the payload. This allows SSRF and possible leak of sensitive token.",
+      "fix_explanation": "Validate notify URLs against a whitelist, require HTTPS, prevent requests to private IPs, add timeouts, and send bearer tokens in headers rather than in JSON. Use environment for token.",
+      "secure_code_snippet": "if not _is_allowed_notify(url): raise ValueError('Invalid notify_url')\nheaders = {'Authorization': f'Bearer {PAYMENT_TOKEN}'}\nresp = requests.post(url, json={'amount': amount}, headers=headers, timeout=5)"
+    },
+    {
+      "id": 5,
+      "file": "inputs.py",
+      "line_numbers": [44,45,46,47],
+      "vulnerability_type": "Path traversal (arbitrary file read)",
+      "severity": "High",
+      "description": "update_records reads arbitrary path supplied by the user allowing disclosure of sensitive files.",
+      "fix_explanation": "Restrict configuration loads to a preapproved `CONFIG_DIR` and validate that provided filenames do not contain path separators; only allow basenames. Verify file existence in config dir.",
+      "secure_code_snippet": "if os.path.basename(filename) != filename: raise ValueError('Invalid filename')\n cfg_path = os.path.join(CONFIG_DIR, filename)"
+    },
+    {
+      "id": 6,
+      "file": "inputs.py",
+      "line_numbers": [50,51,52,53],
+      "vulnerability_type": "Command Injection / Shell execution",
+      "severity": "Critical",
+      "description": "export_data builds a shell command containing a user-supplied name and executes it with shell=True, enabling remote command execution.",
+      "fix_explanation": "Use Python's zipfile module and validate the provided name against a safe pattern (alphanumeric, underscore, dash). Avoid invoking shell commands with user content.",
+      "secure_code_snippet": "with ZipFile(...): zf.write(DB_FILE, arcname=os.path.basename(DB_FILE))"
+    },
+    {
+      "id": 7,
+      "file": "inputs.py",
+      "line_numbers": [87,88],
+      "vulnerability_type": "Debug mode enabled in production",
+      "severity": "Critical",
+      "description": "Running Flask with `debug=True` can provide remote code execution via the debug console.",
+      "fix_explanation": "Disable debug mode in production (debug=False) and run with a WSGI server like gunicorn. Also ensure environment-based configuration.",
+      "secure_code_snippet": "app.run(debug=False)"
+    },
+    {
+      "id": 8,
+      "file": "inputs.py",
+      "line_numbers": [37,38],
+      "vulnerability_type": "Sensitive logging (printing transfer details)",
+      "severity": "Low",
+      "description": "Printing or logging transfer details may leak sensitive information (targets, amounts) into unprotected logs.",
+      "fix_explanation": "Use a structured logger, avoid printing secrets, and redact or limit sensitive fields.",
+      "secure_code_snippet": "logger.info('transfer: %s -> %s', target, amount)"
+    },
+    {
+      "id": 9,
+      "file": "inputs.py",
+      "line_numbers": [56,57,62,63,68,69,74,75,80,81],
+      "vulnerability_type": "Missing authentication on sensitive endpoints",
+      "severity": "High",
+      "description": "Most endpoints do not require authentication nor an API key, making them callable by anyone.",
+      "fix_explanation": "Require a server-side API key (e.g., via X-API-KEY header) and check it on protected endpoints; avoid public access for sensitive operations (transfer, export, config change).",
+      "secure_code_snippet": "@require_api_key\n def api_transfer(): ...\n"    }
+  ]
+}

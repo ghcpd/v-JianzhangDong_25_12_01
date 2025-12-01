@@ -1,0 +1,59 @@
+---
+Test run started: 2025-12-01T06:28:20.321059Z
+Running module: backup
+[2025-12-01T06:28:21.711192Z] module=backup exit=1
+..F..                                                                    [100%]
+================================== FAILURES ===================================
+_________________________ test_config_path_traversal __________________________
+
+module_under_test = <module 'input_backup' from 'D:\\vscoderprojects\\v-JianzhangDong_25_12_01\\oswe-mini-prime\\v-JianzhangDong_25_12_01\\input_backup.py'>
+
+    def test_config_path_traversal(module_under_test):
+        mod = module_under_test
+        # Vulnerable module will open arbitrary paths; secure module only accepts filenames
+        if MODULE_UNDER_TEST == 'backup':
+>           out = mod.update_records(os.path.join('..', 'sensitive.txt'))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_input.py:111: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = '..\\sensitive.txt'
+
+    def update_records(path):
+>       with open(path) as f:
+             ^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '..\\sensitive.txt'
+
+input_backup.py:45: FileNotFoundError
+=========================== short test summary info ===========================
+FAILED tests/test_input.py::test_config_path_traversal - FileNotFoundError: [...
+1 failed, 4 passed in 0.55s
+
+TEST FAILED
+---
+Running module: fixed
+[2025-12-01T06:28:22.911075Z] module=fixed exit=0
+.....                                                                    [100%]
+5 passed in 0.33s
+
+TEST PASSED
+---
+Overall result: TEST FAILED
+---
+Test run started: 2025-12-01T06:30:43.520474Z
+Running module: backup
+[2025-12-01T06:30:45.937613Z] module=backup exit=0
+.....                                                                    [100%]
+5 passed in 0.92s
+
+TEST PASSED
+---
+Running module: fixed
+[2025-12-01T06:30:48.315285Z] module=fixed exit=0
+.....                                                                    [100%]
+5 passed in 0.75s
+
+TEST PASSED
+---
+Overall result: TEST PASSED
