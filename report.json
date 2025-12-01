@@ -1,0 +1,111 @@
+{
+  "summary": {
+    "total_vulnerabilities": 10,
+    "critical": 3,
+    "high": 3,
+    "medium": 3,
+    "low": 1
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "inputs.py",
+      "line_numbers": [11,12,13],
+      "vulnerability_type": "Hardcoded secrets",
+      "severity": "High",
+      "description": "API tokens and internal keys (PAYMENT_TOKEN, MAIL_SERVER_KEY, INTERNAL_AUTH) are hardcoded in source code, exposing secrets and making rotation difficult.",
+      "fix_explanation": "Read secrets from environment variables or a secure vault and fail fast if missing. Do not store secrets in code.",
+      "secure_code_snippet": "PAYMENT_TOKEN = os.environ.get(\"PAYMENT_TOKEN\")\nMAIL_SERVER_KEY = os.environ.get(\"MAIL_SERVER_KEY\")\nINTERNAL_AUTH = os.environ.get(\"INTERNAL_AUTH\")\nADMIN_API_KEY = os.environ.get(\"ADMIN_API_KEY\")"
+    },
+    {
+      "id": 2,
+      "file": "inputs.py",
+      "line_numbers": [18,19,20,21],
+      "vulnerability_type": "Weak hashing (MD5) for auth token generation",
+      "severity": "High",
+      "description": "MD5 is cryptographically broken and should not be used for generating authentication tokens or secrets.",
+      "fix_explanation": "Use an HMAC with SHA-256 (HMAC-SHA256) for token generation and verification backed by a secret key. Ensure the secret is stored securely.",
+      "secure_code_snippet": "token = hmac.new(INTERNAL_AUTH.encode(), username.encode(), hashlib.sha256).hexdigest()"
+    },
+    {
+      "id": 3,
+      "file": "inputs.py",
+      "line_numbers": [24,25,26,27,28,29,30,31],
+      "vulnerability_type": "SQL Injection",
+      "severity": "Critical",
+      "description": "User-supplied 'uid' is interpolated directly into SQL string, allowing SQL injection attacks.",
+      "fix_explanation": "Use parameterized queries with placeholders to prevent SQL injection.",
+      "secure_code_snippet": "c.execute(\"SELECT id,name,balance FROM profiles WHERE id = ?\", (uid,))"
+    },
+    {
+      "id": 4,
+      "file": "inputs.py",
+      "line_numbers": [34,35,36,37,38,39,40,41],
+      "vulnerability_type": "SSRF and token leakage",
+      "severity": "Critical",
+      "description": "The notify_url is accepted from user input and used in requests.post without validation; PAYMENT_TOKEN is included in the request body allowing exfiltration if URL is attacker-controlled.",
+      "fix_explanation": "Validate the URL (https-only, no private IPs), add a short request timeout, and send authentication via headers (Authorization) instead of in request body. Also validate amount values.",
+      "secure_code_snippet": "if not _validate_notify_url(url):\n    raise ValueError(\"Invalid or unsafe notify_url\")\nheaders = { 'Authorization': f\"Bearer {PAYMENT_TOKEN}\" }\nresp = requests.post(url, headers=headers, json={ \"amount\": amount_val }, timeout=5)"
+    },
+    {
+      "id": 5,
+      "file": "inputs.py",
+      "line_numbers": [44,45,46,47],
+      "vulnerability_type": "Path traversal / arbitrary file read",
+      "severity": "High",
+      "description": "update_records reads a file path provided by the user without validation, allowing an attacker to read arbitrary files on the server.",
+      "fix_explanation": "Constrain config reads to a trusted base directory and validate the requested path stays under that directory using realpath checks.",
+      "secure_code_snippet": "base_dir = os.path.realpath(CONFIG_DIR)\nrequested = os.path.realpath(os.path.join(base_dir, path))\nif not requested.startswith(base_dir):\n    raise ValueError(\"Invalid config path\")\nwith open(requested) as f:\n    cfg = yaml.safe_load(f)"
+    },
+    {
+      "id": 6,
+      "file": "inputs.py",
+      "line_numbers": [50,51,52,53],
+      "vulnerability_type": "Command injection via subprocess",
+      "severity": "Critical",
+      "description": "export_data builds a shell command with untrusted 'name' and passes it to subprocess.Popen with shell=True, allowing remote command execution.",
+      "fix_explanation": "Avoid shell=True and instead use Python's 'zipfile' module or pass args as a list to subprocess without shell. Sanitize filenames.",
+      "secure_code_snippet": "safe_name = re.sub(r'[^A-Za-z0-9._-]', '_', name)\nzip_path = f\"{safe_name}.zip\"\nwith zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:\n    zf.write(DB_FILE, arcname=os.path.basename(DB_FILE))"
+    },
+    {
+      "id": 7,
+      "file": "inputs.py",
+      "line_numbers": [56,57,58,59,60,61,62,63,64,65,66,67],
+      "vulnerability_type": "Lack of authentication/authorization on sensitive endpoints",
+      "severity": "Medium",
+      "description": "Critical operations such as /transfer, /config, and /export do not enforce an API key or user authentication, allowing unauthenticated operations.",
+      "fix_explanation": "Require a configured admin API key header and apply a decorator to sensitive endpoints to enforce authorization.",
+      "secure_code_snippet": "def require_api_key(f):\n    @wraps(f)\n    def decorated(*args, **kwargs):\n        auth = request.headers.get('Authorization','')\n        if not auth.startswith('Bearer '):\n            return jsonify({'error':'Unauthorized'}), 401\n        token = auth.split(' ',1)[1]\n        if token != ADMIN_API_KEY:\n            return jsonify({'error':'Forbidden'}), 403\n        return f(*args, **kwargs)\n    return decorated\n\n# Use @require_api_key on sensitive endpoints"
+    },
+    {
+      "id": 8,
+      "file": "inputs.py",
+      "line_numbers": [37,38],
+      "vulnerability_type": "Logging sensitive data",
+      "severity": "Low",
+      "description": "The code prints transfer logs containing potentially sensitive information which may leak via logs.",
+      "fix_explanation": "Use structured logging and avoid printing personally-identifiable or financial data. Do not log tokens.",
+      "secure_code_snippet": "logger.info('transfer requested for target %s, amount=***', target)"
+    },
+    {
+      "id": 9,
+      "file": "inputs.py",
+      "line_numbers": [40,41],
+      "vulnerability_type": "No timeout for HTTP requests",
+      "severity": "Medium",
+      "description": "requests.post is called without a timeout which may allow resource exhaustion or blocking calls.",
+      "fix_explanation": "Always specify a reasonable timeout for HTTP calls and handle exceptions.",
+      "secure_code_snippet": "resp = requests.post(url, headers=headers, json={ 'amount': amount_val }, timeout=5)"
+    },
+    {
+      "id": 10,
+      "file": "inputs.py",
+      "line_numbers": [88],
+      "vulnerability_type": "Debug mode enabled in production",
+      "severity": "High",
+      "description": "Application runs with Flask debug mode enabled, potentially exposing the interactive debugger and code execution to remote users.",
+      "fix_explanation": "Read debug flag from environment variables and default to False; do not run debug=True in production.",
+      "secure_code_snippet": "debug_mode = os.environ.get('FLASK_DEBUG') == '1'\napp.run(debug=debug_mode)"
+    }
+  ]
+}

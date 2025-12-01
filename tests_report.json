@@ -1,0 +1,24 @@
+{
+  "backup": {
+    "results": {
+      "sql_injection_error": "no such table: profiles",
+      "file_traversal_read": false,
+      "command_injection_possible": true,
+      "ssrf_allowed": true,
+      "auth_token_length": 32
+    },
+    "vuln_score": 3,
+    "passed": true
+  },
+  "patched": {
+    "results": {
+      "sql_injection_returned_multiple": false,
+      "file_traversal_read": false,
+      "command_injection_possible": false,
+      "ssrf_allowed": false,
+      "auth_token_error": "INTERNAL_AUTH is not configured via environment variables"
+    },
+    "vuln_score": 0,
+    "passed": true
+  }
+}
