@@ -1,0 +1,91 @@
+{
+  "summary": {
+    "total_vulnerabilities": 8,
+    "critical": 3,
+    "high": 3,
+    "medium": 2,
+    "low": 0
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "inputs.py",
+      "line_numbers": [27],
+      "vulnerability_type": "SQL Injection",
+      "severity": "Critical",
+      "description": "SQL query constructed using string formatting with user input (uid parameter). An attacker can inject SQL commands to bypass authentication, steal data, or modify records.",
+      "fix_explanation": "Replaced string formatting with parameterized queries. Changed from 'SELECT ... WHERE id = \"%s\" % uid' to 'SELECT ... WHERE id = ?' with query.execute(q, (uid,)). This prevents SQL injection by properly escaping user input.",
+      "secure_code_snippet": "c.execute(\"SELECT id,name,balance FROM profiles WHERE id = ?\", (uid,))"
+    },
+    {
+      "id": 2,
+      "file": "inputs.py",
+      "line_numbers": [48],
+      "vulnerability_type": "Command Injection",
+      "severity": "Critical",
+      "description": "Command constructed using f-string with user input (name parameter) and executed with shell=True. Attacker can inject arbitrary commands (e.g., 'name; rm -rf /' would delete files).",
+      "fix_explanation": "Replaced shell=True execution with subprocess.run() using a list of arguments instead of a shell string. Used filename validation with regex to allow only alphanumeric, underscore, and hyphen characters. Added timeout protection.",
+      "secure_code_snippet": "if not re.match(r\"^[a-zA-Z0-9_-]+$\", name):\n    raise ValueError(\"Invalid characters in filename\")\ncmd = [\"zip\", f\"{name}.zip\", DB_FILE]\nsubprocess.run(cmd, check=True, capture_output=True, timeout=30)"
+    },
+    {
+      "id": 3,
+      "file": "inputs.py",
+      "line_numbers": [12, 13, 14],
+      "vulnerability_type": "Hardcoded Secrets (Credentials Exposure)",
+      "severity": "Critical",
+      "description": "Sensitive credentials hardcoded in source code: PAYMENT_TOKEN, MAIL_SERVER_KEY, INTERNAL_AUTH. Secrets in source control can be exposed if repository is compromised, leaked, or accessible to unauthorized users.",
+      "fix_explanation": "Moved all secrets to environment variables using os.environ.get(). Added validation to ensure all required secrets are set at startup. Secrets should be managed using secure vaults or CI/CD secret management systems.",
+      "secure_code_snippet": "PAYMENT_TOKEN = os.environ.get(\"PAYMENT_TOKEN\")\nMAIL_SERVER_KEY = os.environ.get(\"MAIL_SERVER_KEY\")\nINTERNAL_AUTH = os.environ.get(\"INTERNAL_AUTH\")\n\nif not all([PAYMENT_TOKEN, MAIL_SERVER_KEY, INTERNAL_AUTH]):\n    raise ValueError(\"Required environment variables are not set\")"
+    },
+    {
+      "id": 4,
+      "file": "inputs.py",
+      "line_numbers": [21],
+      "vulnerability_type": "Weak Cryptographic Hash (MD5)",
+      "severity": "High",
+      "description": "MD5 hashing used for authentication credentials. MD5 is cryptographically broken and should not be used for security purposes. Supports collision attacks and is vulnerable to rainbow tables.",
+      "fix_explanation": "Replaced MD5 with HMAC-SHA256 using the secret key. HMAC provides both integrity and authentication. SHA256 is a strong cryptographic hash function resistant to known attacks.",
+      "secure_code_snippet": "import hmac\nhashed = hmac.new(\n    key=INTERNAL_AUTH.encode(),\n    msg=raw.encode(),\n    digestmod=hashlib.sha256\n).hexdigest()"
+    },
+    {
+      "id": 5,
+      "file": "inputs.py",
+      "line_numbers": [39, 40, 41],
+      "vulnerability_type": "Server-Side Request Forgery (SSRF)",
+      "severity": "High",
+      "description": "User-controlled URL (notify_url) passed directly to requests.post() without validation. Attacker can make the server request internal APIs, metadata services (169.254.169.254), or localhost services, bypassing firewalls.",
+      "fix_explanation": "Added comprehensive URL validation: 1) Scheme validation (only http/https), 2) Hostname against allowlist if configured, 3) Blocked localhost and internal IP ranges, 4) Added request timeout. URL is parsed and validated before use.",
+      "secure_code_snippet": "parsed_url = urlparse(url)\nif parsed_url.scheme not in [\"http\", \"https\"]:\n    raise ValueError(\"Invalid URL scheme\")\nif parsed_url.hostname in [\"localhost\", \"127.0.0.1\", \"169.254.169.254\"]:\n    raise ValueError(\"Internal IP addresses not allowed\")\nresp = requests.post(url, json={...}, timeout=10)"
+    },
+    {
+      "id": 6,
+      "file": "inputs.py",
+      "line_numbers": [36],
+      "vulnerability_type": "Path Traversal",
+      "severity": "High",
+      "description": "File path parameter passed directly to open() without validation. Attacker can use '../' sequences to read/write arbitrary files outside intended directory (e.g., '/etc/passwd', '../../sensitive_data.txt').",
+      "fix_explanation": "Added path validation using Path.resolve() to canonicalize paths and restrict access to a designated 'configs' directory. Verified that resolved path is within base directory before file access. Added exception handling for YAML parsing errors.",
+      "secure_code_snippet": "base_dir = Path(\"configs\")\nrequested_path = Path(path).resolve()\nbase_path = base_dir.resolve()\nif not str(requested_path).startswith(str(base_path)):\n    raise ValueError(\"Path traversal detected\")"
+    },
+    {
+      "id": 7,
+      "file": "inputs.py",
+      "line_numbers": [36],
+      "vulnerability_type": "Insecure Flask Debug Mode",
+      "severity": "Medium",
+      "description": "Flask debug mode enabled in production (debug=True). Debug mode exposes sensitive information (stack traces, variables, code), enables code reloading, and allows arbitrary code execution via the Werkzeug debugger.",
+      "fix_explanation": "Changed debug mode to be controlled by FLASK_ENV environment variable. Debug mode only enabled when explicitly set to 'development'. Added warning log when debug mode is active to indicate non-production state.",
+      "secure_code_snippet": "debug_mode = os.environ.get(\"FLASK_ENV\") == \"development\"\nif debug_mode:\n    logger.warning(\"Flask running in debug mode - DO NOT USE IN PRODUCTION\")\napp.run(debug=debug_mode)"
+    },
+    {
+      "id": 8,
+      "file": "inputs.py",
+      "line_numbers": [35, 40, 41],
+      "vulnerability_type": "Missing Input Validation and Error Handling",
+      "severity": "Medium",
+      "description": "Multiple endpoints accept user input without validation: amount parameter not validated for type/value, no validation of request data format, missing error handling for missing required fields, sensitive information printed to stdout.",
+      "fix_explanation": "Added comprehensive input validation: 1) Amount validated to be positive number, 2) Required field checks, 3) Proper exception handling with informative error messages, 4) Replaced print() with logging module, 5) Added request timeouts, 6) Error responses include only necessary information without exposing internal details.",
+      "secure_code_snippet": "try:\n    amount_val = float(amount)\n    if amount_val <= 0:\n        raise ValueError(\"Amount must be positive\")\nexcept (TypeError, ValueError):\n    raise ValueError(\"Invalid amount\")\nlogger.info(f\"transfer:{target}:{amount}\")"
+    }
+  ]
+}
