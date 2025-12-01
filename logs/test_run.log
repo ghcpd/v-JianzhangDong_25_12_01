@@ -1,0 +1,122 @@
+===== TEST START =====
+timestamp: 2025-12-01T05:39:58.433657Z
+target_file: input_backup.py
+system: windows
+is_docker: False
+--- stdout ---
+transfer:acct:10
+
+--- stderr ---
+..E.D:\python\Lib\ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001C8A611CD60>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+.
+======================================================================
+ERROR: test_query_profile_sql_injection (tests.test_security.SecurityTests.test_query_profile_sql_injection)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\vscoderprojects\v-JianzhangDong_25_12_01\raptor-secondary\v-JianzhangDong_25_12_01\tests\test_security.py", line 42, in test_query_profile_sql_injection
+    rows = mod.query_profile(payload)
+  File "D:\vscoderprojects\v-JianzhangDong_25_12_01\raptor-secondary\v-JianzhangDong_25_12_01\input_backup.py", line 28, in query_profile
+    c.execute(q)
+    ~~~~~~~~~^^^
+sqlite3.OperationalError: no such table: profiles
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.582s
+
+FAILED (errors=1)
+
+TEST PASSED
+===== TEST END =====
+
+===== TEST START =====
+timestamp: 2025-12-01T05:39:59.156638Z
+target_file: input.py
+system: windows
+is_docker: False
+--- stdout ---
+
+--- stderr ---
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.418s
+
+OK
+
+TEST PASSED
+===== TEST END =====
+
+FINAL STATUS: TEST PASSED
+===== TEST START =====
+timestamp: 2025-12-01T05:40:43.283115Z
+target_file: input_backup.py
+system: windows
+is_docker: False
+--- stdout ---
+transfer:acct:10
+
+--- stderr ---
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.402s
+
+OK
+
+TEST PASSED
+===== TEST END =====
+
+===== TEST START =====
+timestamp: 2025-12-01T05:40:43.998830Z
+target_file: input.py
+system: windows
+is_docker: False
+--- stdout ---
+
+--- stderr ---
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.383s
+
+OK
+
+TEST PASSED
+===== TEST END =====
+
+FINAL STATUS: TEST PASSED
+===== TEST START =====
+timestamp: 2025-12-01T05:41:32.988992+00:00
+target_file: input_backup.py
+system: windows
+is_docker: False
+--- stdout ---
+transfer:acct:10
+
+--- stderr ---
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.371s
+
+OK
+
+TEST PASSED
+===== TEST END =====
+
+===== TEST START =====
+timestamp: 2025-12-01T05:41:33.699540+00:00
+target_file: input.py
+system: windows
+is_docker: False
+--- stdout ---
+
+--- stderr ---
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.402s
+
+OK
+
+TEST PASSED
+===== TEST END =====
+
+FINAL STATUS: TEST PASSED

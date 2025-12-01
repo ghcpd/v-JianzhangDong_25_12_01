@@ -1,0 +1,81 @@
+{
+  "summary": {
+    "total_vulnerabilities": 7,
+    "critical": 2,
+    "high": 3,
+    "medium": 2,
+    "low": 0
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "input.py",
+      "line_numbers": [11, 12, 13],
+      "vulnerability_type": "Hardcoded Secrets",
+      "severity": "High",
+      "description": "Sensitive tokens/keys are hardcoded, risking credential leakage.",
+      "fix_explanation": "Load secrets from environment variables with safe defaults for development and require overrides in production.",
+      "secure_code_snippet": "PAYMENT_TOKEN = get_secret(\"PAYMENT_TOKEN\", default=\"dev-payment-token\")\nMAIL_SERVER_KEY = get_secret(\"MAIL_SERVER_KEY\", default=\"\")\nINTERNAL_AUTH_SECRET = get_secret(\"INTERNAL_AUTH_SECRET\", default=\"dev-internal-secret\")"
+    },
+    {
+      "id": 2,
+      "file": "input.py",
+      "line_numbers": [19],
+      "vulnerability_type": "Weak Hashing (MD5)",
+      "severity": "Medium",
+      "description": "MD5 is insecure for authentication/authorization tokens.",
+      "fix_explanation": "Use HMAC with SHA-256 over the username using a secret key.",
+      "secure_code_snippet": "digest = hmac.new(INTERNAL_AUTH_SECRET.encode(), username.encode(), hashlib.sha256).hexdigest()"
+    },
+    {
+      "id": 3,
+      "file": "input.py",
+      "line_numbers": [25, 27],
+      "vulnerability_type": "SQL Injection",
+      "severity": "Critical",
+      "description": "User-controlled input is concatenated into SQL query strings.",
+      "fix_explanation": "Validate `id` as integer and use parameterized queries.",
+      "secure_code_snippet": "uid_int = int(uid)\ncur.execute(\"SELECT id, name, balance FROM profiles WHERE id = ?\", (uid_int,))"
+    },
+    {
+      "id": 4,
+      "file": "input.py",
+      "line_numbers": [40],
+      "vulnerability_type": "SSRF (Server-Side Request Forgery)",
+      "severity": "High",
+      "description": "Arbitrary URLs from user input are fetched without validation.",
+      "fix_explanation": "Validate notify URLs against allowed hosts and permitted schemes before issuing requests.",
+      "secure_code_snippet": "parsed = urlparse(url)\nif parsed.scheme not in (\"http\", \"https\"): raise ValueError(...)\nif parsed.hostname not in ALLOWED_NOTIFY_HOSTS: raise ValueError(...)"
+    },
+    {
+      "id": 5,
+      "file": "input.py",
+      "line_numbers": [46],
+      "vulnerability_type": "Path Traversal / Arbitrary File Read",
+      "severity": "High",
+      "description": "User-supplied file paths are opened directly, allowing traversal outside intended directory.",
+      "fix_explanation": "Resolve paths and enforce they remain within a whitelisted config directory; reject traversal.",
+      "secure_code_snippet": "resolved = (CONFIG_DIR / candidate).resolve() if not candidate.is_absolute() else candidate.resolve()\nif CONFIG_DIR not in resolved.parents and resolved != CONFIG_DIR: raise ValueError(...)"
+    },
+    {
+      "id": 6,
+      "file": "input.py",
+      "line_numbers": [51, 52],
+      "vulnerability_type": "Command Injection (shell=True)",
+      "severity": "Critical",
+      "description": "Unvalidated input is interpolated into a shell command with shell=True.",
+      "fix_explanation": "Sanitize export name and use Python's zipfile module instead of shelling out.",
+      "secure_code_snippet": "if not SAFE_NAME_RE.fullmatch(name): raise ValueError(...)\nwith zipfile.ZipFile(zip_path, \"w\", compression=zipfile.ZIP_DEFLATED) as zf:\n    zf.write(db_path, arcname=db_path.name)"
+    },
+    {
+      "id": 7,
+      "file": "input.py",
+      "line_numbers": [88],
+      "vulnerability_type": "Debug Mode Enabled",
+      "severity": "Medium",
+      "description": "Flask debug mode is enabled, exposing sensitive traceback information and a remote code execution console.",
+      "fix_explanation": "Disable debug by default; control via environment variables for local development only.",
+      "secure_code_snippet": "debug_mode = os.environ.get(\"FLASK_DEBUG\", \"0\") == \"1\"\napp.run(debug=debug_mode, host=host, port=port)"
+    }
+  ]
+}
