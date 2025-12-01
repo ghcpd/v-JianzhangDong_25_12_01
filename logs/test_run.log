@@ -1,0 +1,97 @@
+Auto Test Execution Log
+Generated: 2025-12-01 13:39:16
+================================================================================
+
+[2025-12-01 13:39:16] Detected environment: windows
+
+================================================================================
+Test Execution Start: 2025-12-01 13:39:16
+Environment: windows
+================================================================================
+
+STDOUT:
+Running comprehensive tests...
+==============================
+
+Test 1: Importing modules...
+âœ?inputs.py imports successfully
+
+Test 2: Testing auth_user function...
+âœ?auth_user returns SHA-256 hash: 866ea4641d5db650...
+
+Test 3: Testing SQL injection prevention...
+âœ?query_profile works with parameterized queries
+
+Test 4: Testing command injection prevention...
+âœ?export_data uses subprocess.run with list arguments (injection-safe)
+
+Test 5: Testing path traversal prevention...
+âœ?Path traversal prevented
+
+Test 6: Testing environment variable loading...
+âœ?Credentials loaded from environment
+
+Test 7: Testing Flask app creation...
+âœ?Flask app created successfully
+
+Cleaning up test files...
+
+==============================
+âœ?All security tests passed
+==============================
+
+
+STDERR:
+  File "<string>", line 1
+    import os; os.environ['DB_FILE'] = 'test_appdata.db'; import inputs; import sys; try: inputs.update_records('../../../etc/passwd'); except ValueError as e: print('âœ?Path traversal blocked: ' + str(e)); sys.exit(0)
+                                                                                     ^^^
+SyntaxError: invalid syntax
+
+
+Return Code: 0
+[2025-12-01 13:39:20] 
+================================================================================
+[2025-12-01 13:39:20] Testing file: inputs_backup.py
+[2025-12-01 13:39:20] Test number: 1
+[2025-12-01 13:39:20] Start time: 2025-12-01 13:39:20
+[2025-12-01 13:39:20] ================================================================================
+Test Output:
+[PASS] Module imported successfully
+[FAIL] auth_user hash length issue: 32
+[FAIL] Error: no such table: profiles
+FAILED: Module test failed
+
+Errors:
+Traceback (most recent call last):
+  File "<string>", line 29, in <module>
+    result = module.query_profile("user1")
+  File "D:\vscoderprojects\v-JianzhangDong_25_12_01\haiku-4.5\v-JianzhangDong_25_12_01\inputs_backup.py", line 28, in query_profile
+    c.execute(q)
+    ~~~~~~~~~^^^
+sqlite3.OperationalError: no such table: profiles
+[2025-12-01 13:39:21] End time: 2025-12-01 13:39:21
+[2025-12-01 13:39:21] Status: TEST FAILED
+[2025-12-01 13:39:21] 
+================================================================================
+[2025-12-01 13:39:21] Testing file: inputs.py
+[2025-12-01 13:39:21] Test number: 2
+[2025-12-01 13:39:21] Start time: 2025-12-01 13:39:21
+[2025-12-01 13:39:21] ================================================================================
+Test Output:
+[PASS] Module imported successfully
+[PASS] auth_user returns proper hash
+[PASS] query_profile works with parameterized queries
+[PASS] Flask app created successfully
+SUCCESS: All module tests passed
+[2025-12-01 13:39:22] End time: 2025-12-01 13:39:22
+[2025-12-01 13:39:22] Status: TEST PASSED
+
+================================================================================
+Test Execution Summary
+================================================================================
+Platform test script: PASSED
+Backup version (inputs_backup.py): FAILED
+Secured version (inputs.py): PASSED
+
+Final Status: TEST PASSED
+End time: 2025-12-01 13:39:22

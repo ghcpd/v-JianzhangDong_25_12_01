@@ -1,0 +1,91 @@
+{
+  "summary": {
+    "total_vulnerabilities": 8,
+    "critical": 3,
+    "high": 3,
+    "medium": 2,
+    "low": 0
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "inputs.py",
+      "line_numbers": [12, 13, 14],
+      "vulnerability_type": "Hardcoded Secrets (API Keys, Tokens, Credentials)",
+      "severity": "Critical",
+      "description": "Sensitive credentials (PAYMENT_TOKEN, MAIL_SERVER_KEY, INTERNAL_AUTH) are hardcoded in the source code. This exposes production secrets, allows attackers to impersonate the application, and violates security best practices. Hardcoded secrets are a OWASP Top 10 vulnerability (A02:2021 – Cryptographic Failures).",
+      "fix_explanation": "Replaced hardcoded secrets with environment variable loading using os.environ.get(). This allows credentials to be managed securely through environment configuration without exposing them in source code. Environment variables should be populated via deployment systems (Docker, Kubernetes, CI/CD) and never committed to version control.",
+      "secure_code_snippet": "PAYMENT_TOKEN = os.environ.get(\"PAYMENT_TOKEN\", \"\")\nMAIL_SERVER_KEY = os.environ.get(\"MAIL_SERVER_KEY\", \"\")\nINTERNAL_AUTH = os.environ.get(\"INTERNAL_AUTH\", \"\")"
+    },
+    {
+      "id": 2,
+      "file": "inputs.py",
+      "line_numbers": [27, 28],
+      "vulnerability_type": "SQL Injection",
+      "severity": "Critical",
+      "description": "The query_profile() function uses string formatting (%) to construct SQL queries (line 27). This allows attackers to inject arbitrary SQL by providing specially crafted uid values. An attacker could extract, modify, or delete database records, leading to complete data compromise (OWASP A03:2021 – Injection).",
+      "fix_explanation": "Replaced string formatting with parameterized queries using ? placeholders and passing parameters as tuples. This separates SQL code from data, preventing injection attacks regardless of input content. The database engine treats user input as data, not executable code.",
+      "secure_code_snippet": "q = \"SELECT id, name, balance FROM profiles WHERE id = ?\"\nc.execute(q, (uid,))"
+    },
+    {
+      "id": 3,
+      "file": "inputs.py",
+      "line_numbers": [54],
+      "vulnerability_type": "Command Injection",
+      "severity": "Critical",
+      "description": "The export_data() function constructs shell commands using string formatting and executes them with shell=True (line 54). Attackers can inject arbitrary shell commands through the 'name' parameter, gaining remote code execution on the server. This is a critical vulnerability allowing complete system compromise.",
+      "fix_explanation": "Replaced subprocess.Popen(cmd, shell=True) with subprocess.run(cmd_list, check=True, ...) using a list of arguments instead of shell string. This prevents shell interpretation and command injection. Each argument is treated as a separate token, not parsed by the shell.",
+      "secure_code_snippet": "cmd = [\"zip\", f\"{name}.zip\", DB_FILE]\nresult = subprocess.run(cmd, check=True, capture_output=True, timeout=30)"
+    },
+    {
+      "id": 4,
+      "file": "inputs.py",
+      "line_numbers": [39, 40, 41],
+      "vulnerability_type": "Path Traversal / Directory Traversal",
+      "severity": "High",
+      "description": "The update_records() function accepts arbitrary file paths without validation. An attacker could use '../' sequences to access files outside the intended directory (e.g., '../../../etc/passwd' on Unix systems). This allows reading sensitive configuration files or system files (OWASP A01:2021 – Broken Access Control).",
+      "fix_explanation": "Added path validation using pathlib.Path.resolve() to normalize paths and checking that the resolved path is within an allowed 'config' directory. Path traversal attempts that escape the allowed directory are rejected. The startswith() check ensures the canonical path remains within bounds.",
+      "secure_code_snippet": "allowed_dir = Path(\"config\").resolve()\nfile_path = (allowed_dir / path).resolve()\nif not str(file_path).startswith(str(allowed_dir)):\n    raise ValueError(\"Access denied: path traversal attempt\")"
+    },
+    {
+      "id": 5,
+      "file": "inputs.py",
+      "line_numbers": [19],
+      "vulnerability_type": "Use of Weak Cryptographic Hash (MD5)",
+      "severity": "High",
+      "description": "The auth_user() function uses MD5 for hashing credentials (line 19). MD5 is cryptographically broken and unsuitable for further use. It's vulnerable to collision attacks and can be reversed using rainbow tables, compromising user authentication security (OWASP A02:2021 – Cryptographic Failures).",
+      "fix_explanation": "Replaced MD5 with SHA-256, which is cryptographically strong and resistant to collision and preimage attacks. Added a salt mechanism (AUTH_SALT environment variable) to further prevent rainbow table attacks. The salt is concatenated with credentials before hashing, making precomputed attacks ineffective.",
+      "secure_code_snippet": "salt = os.environ.get(\"AUTH_SALT\", \"default_salt_change_me\")\nraw = username + INTERNAL_AUTH + salt\nhashed = hashlib.sha256(raw.encode()).hexdigest()"
+    },
+    {
+      "id": 6,
+      "file": "inputs.py",
+      "line_numbers": [36, 37, 38],
+      "vulnerability_type": "Server-Side Request Forgery (SSRF)",
+      "severity": "High",
+      "description": "The transfer_funds() function accepts a notify_url from user input and makes an HTTP request to it without validation (lines 37-38). Attackers can redirect requests to internal services, cloud metadata endpoints (e.g., 169.254.169.254), or other unintended targets, potentially leaking sensitive information or compromising internal infrastructure.",
+      "fix_explanation": "Added URL validation to ensure only http:// and https:// schemes are allowed. Reject file://, gopher://, and other dangerous schemes. Added timeout parameter to prevent hanging. In production, implement a whitelist of allowed domains and validate the hostname against it.",
+      "secure_code_snippet": "if not url.startswith((\"http://\", \"https://\")):\n    raise ValueError(\"Invalid URL scheme\")\nresp = requests.post(url, json={...}, timeout=10)"
+    },
+    {
+      "id": 7,
+      "file": "inputs.py",
+      "line_numbers": [84],
+      "vulnerability_type": "Debug Mode Enabled in Production",
+      "severity": "Medium",
+      "description": "The Flask application runs with debug=True in the main block (line 84). Debug mode exposes detailed error pages, enables the interactive debugger, reloads code on changes, and displays sensitive information. This allows attackers to gather intelligence and exploit the application more easily. Debug mode should never be enabled in production.",
+      "fix_explanation": "Changed debug mode to be controlled by the FLASK_DEBUG environment variable, defaulting to False. Added environment variable to control the mode. In the startup, debug is only enabled if explicitly set to 'true' in the environment. Added host='127.0.0.1' to restrict listening to localhost in development.",
+      "secure_code_snippet": "app.config['DEBUG'] = os.environ.get(\"FLASK_DEBUG\", \"False\").lower() == \"true\"\nif __name__ == \"__main__\":\n    app.run(debug=app.config['DEBUG'], host=\"127.0.0.1\")"
+    },
+    {
+      "id": 8,
+      "file": "inputs.py",
+      "line_numbers": [33, 34, 35],
+      "vulnerability_type": "Sensitive Data Exposure via Logging",
+      "severity": "Medium",
+      "description": "The transfer_funds() function logs the complete transfer details including target and amount to stdout (lines 33-35). This sensitive financial information could be captured in logs, application monitoring systems, or temporary files, exposing transaction details to unauthorized parties.",
+      "fix_explanation": "Removed the print() statement and replaced it with a structured logging call (logger.info()) that only logs non-sensitive metadata (e.g., 'transfer initiated'). Sensitive data (amounts, targets, tokens) are excluded from logs. All errors are logged to the logger instead of exposing details to users.",
+      "secure_code_snippet": "# Remove: print(log)\n# Add: logger.info(f\"transfer initiated: target={target}\")\n# Never log: PAYMENT_TOKEN, amount, or user data"
+    }
+  ]
+}
