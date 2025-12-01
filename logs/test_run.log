@@ -1,0 +1,36 @@
+[2025-12-01T06:27:44.243714Z] Starting test runner: run_test.bat
+[2025-12-01T06:27:44.985218Z] Return code: 0
+[2025-12-01T06:27:44.985253Z] STDOUT:
+transfer:1:1
+TESTS COMPLETED: all expectations met
+TEST PASSED
+
+[2025-12-01T06:27:44.985267Z] STDERR:
+
+[2025-12-01T06:27:44.995576Z] Test report: {
+  "backup": {
+    "results": {
+      "sql_injection_error": "no such table: profiles",
+      "file_traversal_read": false,
+      "command_injection_possible": true,
+      "ssrf_allowed": true,
+      "auth_token_length": 32
+    },
+    "vuln_score": 3,
+    "passed": true
+  },
+  "patched": {
+    "results": {
+      "sql_injection_returned_multiple": false,
+      "file_traversal_read": false,
+      "command_injection_possible": false,
+      "ssrf_allowed": false,
+      "auth_token_error": "INTERNAL_AUTH is not configured via environment variables"
+    },
+    "vuln_score": 0,
+    "passed": true
+  }
+}
+[2025-12-01T06:27:44.995660Z] Module backup: passed=True, vuln_score=3
+[2025-12-01T06:27:44.995676Z] Module patched: passed=True, vuln_score=0
+[2025-12-01T06:27:44.995679Z] TEST PASSED
