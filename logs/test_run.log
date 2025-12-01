@@ -1,0 +1,121 @@
+[2025-12-01 10:52:10] ============================================================
+[2025-12-01 10:52:10] Automatic Test Runner - Environment Detection
+[2025-12-01 10:52:10] ============================================================
+[2025-12-01 10:52:10] Environment: Windows (11)
+[2025-12-01 10:52:10] 
+[2025-12-01 10:52:10] Running Windows test script (run_test.bat)...
+[2025-12-01 10:52:10] ============================================================
+[2025-12-01 10:52:10] Test Output:
+[2025-12-01 10:52:10] ------------------------------------------------------------
+[2025-12-01 10:52:10] ====================================
+[2025-12-01 10:52:10] Running Security Tests
+[2025-12-01 10:52:10] ====================================
+[2025-12-01 10:52:10] Testing file: 
+[2025-12-01 10:52:10] ------------------------------------
+[2025-12-01 10:52:10] ERROR: File  not found
+[2025-12-01 10:52:10] ------------------------------------------------------------
+[2025-12-01 10:52:10] Status: TEST FAILED
+[2025-12-01 10:52:10] 
+[2025-12-01 10:52:10] ============================================================
+[2025-12-01 10:52:10] Test Execution Complete
+[2025-12-01 10:52:10] ============================================================
+[2025-12-01 10:52:10] Log file: logs\test_run.log
+[2025-12-01 10:52:10] FINAL STATUS: TEST FAILED
+[2025-12-01 10:53:02] ============================================================
+[2025-12-01 10:53:02] Automatic Test Runner - Environment Detection
+[2025-12-01 10:53:02] ============================================================
+[2025-12-01 10:53:02] Environment: Windows (11)
+[2025-12-01 10:53:02] 
+[2025-12-01 10:53:02] Running Windows test script (run_test.bat)...
+[2025-12-01 10:53:02] ============================================================
+[2025-12-01 10:53:02] Test Output:
+[2025-12-01 10:53:02] ------------------------------------------------------------
+[2025-12-01 10:53:02] ====================================
+[2025-12-01 10:53:02] Running Security Tests
+[2025-12-01 10:53:02] ====================================
+[2025-12-01 10:53:02] Part 1: Testing inputs_backup.py (vulnerable version)
+[2025-12-01 10:53:02] ====================================
+[2025-12-01 10:53:02] Testing file: inputs_backup.py
+[2025-12-01 10:53:02] ------------------------------------
+[2025-12-01 10:53:02] Test 1: Checking for hardcoded secrets...
+[2025-12-01 10:53:02]   X FAILED: Hardcoded secrets found
+[2025-12-01 10:53:02] Part 2: Testing inputs.py (secure version)
+[2025-12-01 10:53:02] ====================================
+[2025-12-01 10:53:02] Testing file: inputs.py
+[2025-12-01 10:53:02] ------------------------------------
+[2025-12-01 10:53:02] Test 1: Checking for hardcoded secrets...
+[2025-12-01 10:53:02]   鈭?PASSED: No hardcoded secrets detected
+[2025-12-01 10:53:02] Test 2: Checking for SQL injection vulnerabilities...
+[2025-12-01 10:53:02]   鈭?PASSED: No SQL injection vulnerabilities detected
+[2025-12-01 10:53:02] Test 3: Checking for weak cryptography (MD5)...
+[2025-12-01 10:53:02]   鈭?PASSED: No MD5 usage detected
+[2025-12-01 10:53:02] Test 4: Checking for command injection vulnerabilities...
+[2025-12-01 10:53:02]   X FAILED: subprocess with shell=True detected
+[2025-12-01 10:53:02] ====================================
+[2025-12-01 10:53:02] Test Summary
+[2025-12-01 10:53:02] ====================================
+[2025-12-01 10:53:02] inputs_backup.py: FAILED (as expected - contains vulnerabilities)
+[2025-12-01 10:53:02] inputs.py: FAILED
+[2025-12-01 10:53:02] OVERALL: TEST FAILED
+[2025-12-01 10:53:02] ------------------------------------------------------------
+[2025-12-01 10:53:02] Status: TEST FAILED
+[2025-12-01 10:53:02] 
+[2025-12-01 10:53:02] ============================================================
+[2025-12-01 10:53:02] Test Execution Complete
+[2025-12-01 10:53:02] ============================================================
+[2025-12-01 10:53:02] Log file: logs\test_run.log
+[2025-12-01 10:53:02] FINAL STATUS: TEST FAILED
+[2025-12-01 10:54:57] ============================================================
+[2025-12-01 10:54:57] Automatic Test Runner - Environment Detection
+[2025-12-01 10:54:57] ============================================================
+[2025-12-01 10:54:57] Environment: Windows (11)
+[2025-12-01 10:54:57] 
+[2025-12-01 10:54:57] Running Windows test script (run_test.bat)...
+[2025-12-01 10:54:58] ============================================================
+[2025-12-01 10:54:58] Test Output:
+[2025-12-01 10:54:58] ------------------------------------------------------------
+[2025-12-01 10:54:58] ====================================
+[2025-12-01 10:54:58] Running Security Tests
+[2025-12-01 10:54:58] ====================================
+[2025-12-01 10:54:58] Part 1: Testing inputs_backup.py (vulnerable version)
+[2025-12-01 10:54:58] ====================================
+[2025-12-01 10:54:58] Testing file: inputs_backup.py
+[2025-12-01 10:54:58] ------------------------------------
+[2025-12-01 10:54:58] Test 1: Checking for hardcoded secrets...
+[2025-12-01 10:54:58]   X FAILED: Hardcoded secrets found
+[2025-12-01 10:54:58] Part 2: Testing inputs.py (secure version)
+[2025-12-01 10:54:58] ====================================
+[2025-12-01 10:54:58] Testing file: inputs.py
+[2025-12-01 10:54:58] ------------------------------------
+[2025-12-01 10:54:58] Test 1: Checking for hardcoded secrets...
+[2025-12-01 10:54:58]   鈭?PASSED: No hardcoded secrets detected
+[2025-12-01 10:54:58] Test 2: Checking for SQL injection vulnerabilities...
+[2025-12-01 10:54:58]   鈭?PASSED: No SQL injection vulnerabilities detected
+[2025-12-01 10:54:58] Test 3: Checking for weak cryptography (MD5)...
+[2025-12-01 10:54:58]   鈭?PASSED: No MD5 usage detected
+[2025-12-01 10:54:58] Test 4: Checking for command injection vulnerabilities...
+[2025-12-01 10:54:58]   鈭?PASSED: No command injection vulnerabilities detected
+[2025-12-01 10:54:58] Test 5: Checking for debug mode...
+[2025-12-01 10:54:58]   鈭?PASSED: Debug mode is properly configured
+[2025-12-01 10:54:58] Test 6: Checking for input validation...
+[2025-12-01 10:54:58]   鈭?PASSED: Input validation detected
+[2025-12-01 10:54:58] Test 7: Checking for SSRF protection...
+[2025-12-01 10:54:58]   鈭?PASSED: URL validation detected
+[2025-12-01 10:54:58] Test 8: Checking for path traversal protection...
+[2025-12-01 10:54:58]   鈭?PASSED: Path validation detected
+[2025-12-01 10:54:58] Test 9: Checking Python syntax...
+[2025-12-01 10:54:58]   鈭?PASSED: Python syntax is valid
+[2025-12-01 10:54:58] ====================================
+[2025-12-01 10:54:58] Test Summary
+[2025-12-01 10:54:58] ====================================
+[2025-12-01 10:54:58] inputs_backup.py: FAILED (as expected - contains vulnerabilities)
+[2025-12-01 10:54:58] inputs.py: PASSED (secure)
+[2025-12-01 10:54:58] OVERALL: TEST PASSED
+[2025-12-01 10:54:58] ------------------------------------------------------------
+[2025-12-01 10:54:58] Status: TEST PASSED
+[2025-12-01 10:54:58] 
+[2025-12-01 10:54:58] ============================================================
+[2025-12-01 10:54:58] Test Execution Complete
+[2025-12-01 10:54:58] ============================================================
+[2025-12-01 10:54:58] Log file: logs\test_run.log
+[2025-12-01 10:54:58] FINAL STATUS: TEST PASSED

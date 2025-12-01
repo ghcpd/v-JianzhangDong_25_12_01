@@ -1,0 +1,111 @@
+{
+  "summary": {
+    "total_vulnerabilities": 10,
+    "critical": 5,
+    "high": 3,
+    "medium": 2,
+    "low": 0
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "inputs.py",
+      "line_numbers": [11, 12, 13],
+      "vulnerability_type": "Hardcoded Secrets / Credentials Exposure",
+      "severity": "Critical",
+      "description": "Three sensitive credentials are hardcoded directly in the source code: PAYMENT_TOKEN, MAIL_SERVER_KEY, and INTERNAL_AUTH. These secrets are exposed in version control and can be exploited if the code is leaked or accessed by unauthorized personnel.",
+      "fix_explanation": "Replaced hardcoded secrets with environment variables using os.environ.get(). This follows the principle of separation of configuration from code. Secrets should be stored in environment variables, secret management systems (like HashiCorp Vault, AWS Secrets Manager), or encrypted configuration files, never in source code.",
+      "secure_code_snippet": "PAYMENT_TOKEN = os.environ.get(\"PAYMENT_TOKEN\", \"\")\nMAIL_SERVER_KEY = os.environ.get(\"MAIL_SERVER_KEY\", \"\")\nINTERNAL_AUTH = os.environ.get(\"INTERNAL_AUTH\", \"\")"
+    },
+    {
+      "id": 2,
+      "file": "inputs.py",
+      "line_numbers": [26],
+      "vulnerability_type": "SQL Injection",
+      "severity": "Critical",
+      "description": "The query_profile function uses string formatting (%s) to construct SQL queries with user-supplied input (uid). An attacker can inject malicious SQL code to bypass authentication, access unauthorized data, modify database contents, or execute arbitrary commands on the database server.",
+      "fix_explanation": "Replaced string formatting with parameterized queries (prepared statements). The query now uses '?' placeholders and passes the uid as a tuple parameter to execute(). Added input validation to ensure uid contains only digits. Parameterized queries ensure that user input is treated as data, not executable SQL code, completely eliminating SQL injection vulnerabilities.",
+      "secure_code_snippet": "if not uid or not uid.isdigit():\n    logger.warning(f\"Invalid user ID format attempted: {uid}\")\n    return []\n\nconn = sqlite3.connect(DB_FILE)\nc = conn.cursor()\nq = \"SELECT id, name, balance FROM profiles WHERE id = ?\"\nc.execute(q, (uid,))\ndata = c.fetchall()\nconn.close()\nreturn data"
+    },
+    {
+      "id": 3,
+      "file": "inputs.py",
+      "line_numbers": [19],
+      "vulnerability_type": "Weak Cryptographic Hash (MD5)",
+      "severity": "High",
+      "description": "The auth_user function uses MD5 for hashing authentication data. MD5 is cryptographically broken and unsuitable for security purposes. It's vulnerable to collision attacks and can be quickly cracked using rainbow tables or brute force attacks.",
+      "fix_explanation": "Replaced MD5 with werkzeug.security.generate_password_hash() which uses pbkdf2:sha256 with salt by default. This is a modern, secure key derivation function designed specifically for password hashing. It includes automatic salting and multiple iterations (default 260,000 for pbkdf2:sha256) to resist brute-force attacks. For production, consider using bcrypt or Argon2 for even stronger protection.",
+      "secure_code_snippet": "from werkzeug.security import generate_password_hash, check_password_hash\n\ndef auth_user(info):\n    username = info.get(\"username\", \"\")\n    if not username:\n        return None\n    raw = username + INTERNAL_AUTH\n    hashed = generate_password_hash(raw, method='pbkdf2:sha256', salt_length=16)\n    return hashed"
+    },
+    {
+      "id": 4,
+      "file": "inputs.py",
+      "line_numbers": [37],
+      "vulnerability_type": "Server-Side Request Forgery (SSRF)",
+      "severity": "Critical",
+      "description": "The transfer_funds function accepts a user-supplied URL (notify_url) and makes an HTTP POST request to it without validation. An attacker can supply internal network URLs (e.g., http://localhost:6379, http://169.254.169.254/latest/meta-data/) to access internal services, cloud metadata endpoints, or perform port scanning.",
+      "fix_explanation": "Implemented URL whitelist validation through the is_url_allowed() function. Before making any HTTP request, the URL is parsed and its domain is checked against ALLOWED_DOMAINS list. Only pre-approved, trusted domains are permitted. Added timeout parameter to prevent hanging requests. This prevents attackers from forcing the server to make requests to arbitrary URLs.",
+      "secure_code_snippet": "ALLOWED_DOMAINS = [\"trusted-api.example.com\", \"payment-gateway.example.com\"]\n\ndef is_url_allowed(url):\n    try:\n        parsed = urlparse(url)\n        if parsed.netloc in ALLOWED_DOMAINS:\n            return True\n        logger.warning(f\"Attempted access to non-whitelisted domain: {parsed.netloc}\")\n        return False\n    except Exception as e:\n        logger.error(f\"URL validation error: {str(e)}\")\n        return False\n\nif not url or not is_url_allowed(url):\n    logger.error(\"Invalid or unauthorized notification URL\")\n    return \"Error: Invalid notification URL\"\n\nresp = requests.post(url, json={\"token\": PAYMENT_TOKEN, \"amount\": amount}, timeout=5)"
+    },
+    {
+      "id": 5,
+      "file": "inputs.py",
+      "line_numbers": [43],
+      "vulnerability_type": "Path Traversal / Arbitrary File Read",
+      "severity": "Critical",
+      "description": "The update_records function accepts a user-supplied file path and opens it without validation. An attacker can use path traversal sequences (../) to read arbitrary files on the system, including sensitive files like /etc/passwd, /etc/shadow, application configuration files, or source code containing secrets.",
+      "fix_explanation": "Implemented a whitelist approach with ALLOWED_CONFIG_PATHS containing only approved configuration file paths. Added validation to check if the provided path is in the whitelist. Additional security check ensures no '..' sequences exist and that the absolute path starts with approved directories. This restricts file access to only pre-approved configuration files.",
+      "secure_code_snippet": "ALLOWED_CONFIG_PATHS = [\"/etc/app/config.yaml\", \"/app/config/settings.yaml\"]\n\ndef update_records(path):\n    if path not in ALLOWED_CONFIG_PATHS:\n        logger.error(f\"Attempted access to unauthorized path: {path}\")\n        raise ValueError(\"Unauthorized file path\")\n    \n    if \"..\" in path or not os.path.abspath(path).startswith((\"/etc/app/\", \"/app/config/\")):\n        logger.error(f\"Path traversal attempt detected: {path}\")\n        raise ValueError(\"Invalid file path\")\n    \n    try:\n        with open(path) as f:\n            cfg = yaml.safe_load(f)\n        return cfg\n    except FileNotFoundError:\n        logger.error(f\"Config file not found: {path}\")\n        return {\"error\": \"Config file not found\"}"
+    },
+    {
+      "id": 6,
+      "file": "inputs.py",
+      "line_numbers": [49],
+      "vulnerability_type": "Command Injection",
+      "severity": "Critical",
+      "description": "The export_data function uses shell=True with user-supplied input in the command string. An attacker can inject shell metacharacters (;, |, &, $, `, etc.) to execute arbitrary system commands. For example, input like 'data; rm -rf /' could delete system files.",
+      "fix_explanation": "Eliminated shell=True and replaced it with subprocess.run() using a list of arguments. This prevents shell interpretation of special characters. Added strict input validation using regex to allow only alphanumeric characters, hyphens, and underscores in the filename. Added timeout to prevent hanging processes. Using list arguments ensures that user input is treated as literal data, not shell commands.",
+      "secure_code_snippet": "def export_data(name):\n    if not re.match(r'^[a-zA-Z0-9_-]+$', name):\n        logger.error(f\"Invalid export filename: {name}\")\n        raise ValueError(\"Invalid filename format\")\n    \n    output_file = f\"{name}.zip\"\n    try:\n        result = subprocess.run(\n            [\"zip\", output_file, DB_FILE],\n            capture_output=True,\n            text=True,\n            timeout=30,\n            check=False\n        )\n        if result.returncode != 0:\n            logger.error(f\"Export failed: {result.stderr}\")\n            return False\n        return True\n    except subprocess.TimeoutExpired:\n        logger.error(\"Export operation timed out\")\n        return False"
+    },
+    {
+      "id": 7,
+      "file": "inputs.py",
+      "line_numbers": [85],
+      "vulnerability_type": "Debug Mode Enabled in Production",
+      "severity": "High",
+      "description": "The Flask application runs with debug=True. Debug mode exposes sensitive information including source code, stack traces with local variables, environment variables, and provides an interactive debugger accessible via web browser. This gives attackers valuable reconnaissance information and potential code execution capabilities.",
+      "fix_explanation": "Changed debug mode to be controlled by environment variable FLASK_DEBUG, defaulting to False. Added host binding to 127.0.0.1 to restrict access to localhost by default. Debug mode should only be enabled in development environments, never in production. The application now reads the FLASK_DEBUG environment variable and only enables debug mode if explicitly set to 'true'.",
+      "secure_code_snippet": "if __name__ == \"__main__\":\n    debug_mode = os.environ.get(\"FLASK_DEBUG\", \"False\").lower() == \"true\"\n    app.run(debug=debug_mode, host=\"127.0.0.1\")"
+    },
+    {
+      "id": 8,
+      "file": "inputs.py",
+      "line_numbers": [55, 60, 65, 70, 75, 80],
+      "vulnerability_type": "Missing Input Validation",
+      "severity": "High",
+      "description": "All API endpoints lack proper input validation. They accept and process user input without checking for null values, empty strings, correct data types, or valid ranges. This can lead to application crashes, unexpected behavior, or enable exploitation of other vulnerabilities.",
+      "fix_explanation": "Added comprehensive input validation to all API endpoints. Each endpoint now checks for: 1) Presence of required fields, 2) Correct data types, 3) Valid formats (e.g., numeric IDs, valid URLs), 4) Appropriate ranges where applicable. Returns proper HTTP error codes (400 for bad requests, 401 for authentication failures, 403 for forbidden access, 500 for server errors) with descriptive error messages. This follows defense-in-depth principle.",
+      "secure_code_snippet": "@app.route(\"/transfer\", methods=[\"POST\"])\ndef api_transfer():\n    if not request.json:\n        return jsonify({\"error\": \"Invalid request\"}), 400\n    \n    p = request.json\n    \n    if \"target\" not in p or \"amount\" not in p or \"notify_url\" not in p:\n        return jsonify({\"error\": \"Missing required fields\"}), 400\n    \n    result = transfer_funds(p)\n    \n    if result.startswith(\"Error:\"):\n        return jsonify({\"error\": result}), 400\n    \n    return jsonify({\"result\": result})"
+    },
+    {
+      "id": 9,
+      "file": "inputs.py",
+      "line_numbers": [35],
+      "vulnerability_type": "Information Disclosure via Logging",
+      "severity": "Medium",
+      "description": "The transfer_funds function logs sensitive transaction details in plain text, including target account and amount. These logs may be stored insecurely, accessible to unauthorized personnel, or leaked through log aggregation systems.",
+      "fix_explanation": "Implemented secure logging practices using Python's logging module with proper configuration. Sensitive data is either masked (showing only first 4 characters with ****) or completely omitted from logs. Replaced print() statements with logger.info() and logger.error() for structured logging with severity levels. Configured logging level to INFO to avoid verbose debug output in production.",
+      "secure_code_snippet": "import logging\n\nlogging.basicConfig(level=logging.INFO)\nlogger = logging.getLogger(__name__)\n\ndef transfer_funds(payload):\n    target = payload.get(\"target\")\n    amount = payload.get(\"amount\")\n    \n    # Log without sensitive details - mask target\n    logger.info(f\"Transfer initiated for target: {target[:4]}****\")"
+    },
+    {
+      "id": 10,
+      "file": "inputs.py",
+      "line_numbers": [55, 60, 65, 70, 75, 80],
+      "vulnerability_type": "Missing Rate Limiting / No Brute Force Protection",
+      "severity": "Medium",
+      "description": "None of the API endpoints implement rate limiting or request throttling. An attacker can make unlimited requests to brute force authentication, enumerate user accounts, cause denial of service by resource exhaustion, or perform automated attacks.",
+      "fix_explanation": "While rate limiting is best implemented at the infrastructure level (reverse proxy, API gateway, CDN), the code now includes proper error handling and validation that makes brute force attacks more difficult. For production deployment, implement rate limiting using Flask-Limiter extension or configure rate limiting in nginx/Apache. Example: @limiter.limit('5 per minute') decorator on sensitive endpoints. Also consider implementing CAPTCHA on authentication endpoints after failed attempts.",
+      "secure_code_snippet": "# Recommended implementation (requires flask-limiter):\n# from flask_limiter import Limiter\n# from flask_limiter.util import get_remote_address\n# \n# limiter = Limiter(\n#     app,\n#     key_func=get_remote_address,\n#     default_limits=[\"200 per day\", \"50 per hour\"]\n# )\n# \n# @app.route(\"/auth\", methods=[\"POST\"])\n# @limiter.limit(\"5 per minute\")\n# def api_auth():\n#     # ... existing code"
+    }
+  ]
+}
