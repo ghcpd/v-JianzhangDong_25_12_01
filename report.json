@@ -1,0 +1,111 @@
+{
+  "summary": {
+    "total_vulnerabilities": 10,
+    "critical": 2,
+    "high": 6,
+    "medium": 1,
+    "low": 1
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "inputs.py",
+      "line_numbers": [11,12,13],
+      "vulnerability_type": "Hardcoded secrets",
+      "severity": "High",
+      "description": "API tokens and secrets are hardcoded in source code (PAYMENT_TOKEN, MAIL_SERVER_KEY, INTERNAL_AUTH), which risks credential leakage if code is exposed.",
+      "fix_explanation": "Secrets were moved to environment variables and checked at startup. Using environment variables avoids embedding sensitive data in source control. The application now requires API_KEY and INTERNAL_AUTH env vars.",
+      "secure_code_snippet": "API_KEY = os.environ.get(\"API_KEY\")\nPAYMENT_TOKEN = os.environ.get(\"PAYMENT_TOKEN\")\nMAIL_SERVER_KEY = os.environ.get(\"MAIL_SERVER_KEY\")\nINTERNAL_AUTH = os.environ.get(\"INTERNAL_AUTH\")"
+    },
+    {
+      "id": 2,
+      "file": "inputs.py",
+      "line_numbers": [18,19,20,21],
+      "vulnerability_type": "Weak hashing (MD5) and static salt",
+      "severity": "High",
+      "description": "auth_user uses MD5 hashing with a static salt (INTERNAL_AUTH). MD5 is cryptographically weak and prone to collisions.",
+      "fix_explanation": "Replaced MD5 with HMAC-SHA256 using a secret from environment variables to generate token. HMAC with SHA-256 provides stronger cryptographic properties.",
+      "secure_code_snippet": "def auth_user(info):\n    username = info.get(\"username\", \"\")\n    token = hmac.new(INTERNAL_AUTH.encode(), username.encode(), hashlib.sha256).hexdigest()\n    return token"
+    },
+    {
+      "id": 3,
+      "file": "inputs.py",
+      "line_numbers": [24,25,27,28],
+      "vulnerability_type": "SQL Injection",
+      "severity": "Critical",
+      "description": "query_profile constructs SQL queries using string formatting with untrusted 'uid', allowing SQL injection.",
+      "fix_explanation": "Switched to parameterized queries using placeholders so user input is not interpolated directly. Also enforced uid to be integer to prevent injection patterns.",
+      "secure_code_snippet": "with get_db_connection() as conn:\n    c = conn.cursor()\n    c.execute(\"SELECT id, name FROM profiles WHERE id = ?\", (uid_int,))\n    row = c.fetchone()"
+    },
+    {
+      "id": 4,
+      "file": "inputs.py",
+      "line_numbers": [44,45,46,47],
+      "vulnerability_type": "Arbitrary file read / path traversal",
+      "severity": "High",
+      "description": "update_records accepts arbitrary file paths from user and opens them, allowing reading sensitive files via path traversal.",
+      "fix_explanation": "Restrict file reads to a configurable 'configs' directory and prevent path traversal by resolving the real path and confirming it stays under the allowed directory. Also limited to .yaml/.yml files.",
+      "secure_code_snippet": "base = os.path.join(os.path.dirname(__file__), 'configs')\nintended = os.path.realpath(os.path.join(base, path))\nif not intended.startswith(os.path.realpath(base)):\n    raise ValueError(\"Invalid config file path\")"
+    },
+    {
+      "id": 5,
+      "file": "inputs.py",
+      "line_numbers": [50,51,52,53],
+      "vulnerability_type": "Command Injection via subprocess with shell=True",
+      "severity": "Critical",
+      "description": "export_data calls 'zip' using subprocess.Popen with shell=True and an unsanitized name, enabling shell command injection.",
+      "fix_explanation": "Removed subprocess usage and created zip archives using Python's zipfile module with strict name validation (regex allowing alphanumeric, underscore, hyphen). This eliminates shell execution risks.",
+      "secure_code_snippet": "if not re.fullmatch(r'[A-Za-z0-9_\-]+', name):\n    raise ValueError('Invalid archive name')\nwith zipfile.ZipFile(archive_full, 'w', zipfile.ZIP_DEFLATED) as zf:\n    zf.write(DB_FILE, arcname=os.path.basename(DB_FILE))"
+    },
+    {
+      "id": 6,
+      "file": "inputs.py",
+      "line_numbers": [56,62,68,74,80],
+      "vulnerability_type": "Missing authentication on sensitive endpoints",
+      "severity": "High",
+      "description": "API endpoints such as /profile, /transfer, /config, /export were accessible without authentication, allowing attackers to access or manipulate data.",
+      "fix_explanation": "Added a decorator 'requires_api_key' to protect sensitive endpoints. The API requires a header 'X-API-KEY' that matches an env var 'API_KEY'.",
+      "secure_code_snippet": "def requires_api_key(func):\n    @wraps(func)\n    def wrapper(*args, **kwargs):\n        key = request.headers.get('X-API-KEY')\n        if not key or key != API_KEY:\n            return jsonify({'error': 'Unauthorized'}), 401\n        return func(*args, **kwargs)\n    return wrapper"
+    },
+    {
+      "id": 7,
+      "file": "inputs.py",
+      "line_numbers": [34,35,36,39,40,41],
+      "vulnerability_type": "SSRF / token leakage via notify_url",
+      "severity": "High",
+      "description": "transfer_funds sends PAYMENT_TOKEN directly to an arbitrary notify_url provided by the user and doesn't validate the URL or amount, so secrets can be leaked and SSRF attacks may occur.",
+      "fix_explanation": "Now validate notify_url to require https and disallow localhost addresses; do not send PAYMENT_TOKEN directly. Instead, sign the payload using WEBHOOK_SECRET and send the signature as a header. Also validate amount and add request timeout and exception handling.",
+      "secure_code_snippet": "parsed = urlparse(url)\nif parsed.scheme not in ('https',):\n    raise ValueError('notify_url must use https')\nsignature = hmac.new(WEBHOOK_SECRET.encode(), str(payload_to_send).encode(), hashlib.sha256).hexdigest()\nheaders = {'X-WEBHOOK-SIGNATURE': signature}\nresp = requests.post(url, json=payload_to_send, headers=headers, timeout=5)"
+    },
+    {
+      "id": 8,
+      "file": "inputs.py",
+      "line_numbers": [87,88],
+      "vulnerability_type": "Flask Debug Mode Enabled",
+      "severity": "High",
+      "description": "Application ran with debug=True by default, which could expose interactive debugger and execute arbitrary code if exposed to the network.",
+      "fix_explanation": "Changed execution to respect 'FLASK_DEBUG' env var and default debug to False to avoid accidental exposures.",
+      "secure_code_snippet": "debug_flag = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'\napp.run(debug=debug_flag)"
+    },
+    {
+      "id": 9,
+      "file": "inputs.py",
+      "line_numbers": [34,35,36,37,38],
+      "vulnerability_type": "Unvalidated inputs and logging leakage",
+      "severity": "Medium",
+      "description": "transfer_funds did not validate inputs and printed logs using print(), leaking potentially sensitive info.",
+      "fix_explanation": "Added strict validation for amount and target. Removed print() logging in favor of structured logging with the `logging` module and used error logging where appropriate.",
+      "secure_code_snippet": "try:\n    amount_val = float(amount)\n    if amount_val <= 0:\n        raise ValueError('Amount must be positive')\nexcept (ValueError, TypeError):\n    raise ValueError('Invalid amount')"
+    },
+    {
+      "id": 10,
+      "file": "inputs.py",
+      "line_numbers": [37,38],
+      "vulnerability_type": "Use of print statements for logging",
+      "severity": "Low",
+      "description": "Using print() for logging is not ideal in production and can leak sensitive info in stdout. Use structured logging instead.",
+      "fix_explanation": "Replaced print() statements with appropriate `logging` calls and used exception handling for errors.",
+      "secure_code_snippet": "logger.info('Transfer initiated for target: %s amount: %s', target, amount)"
+    }
+  ]
+}
